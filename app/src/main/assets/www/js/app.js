@@ -496,7 +496,9 @@ function setView(view, options = {}) {
     history.pushState({ view }, "", url);
   }
   const workspaceTop = document.querySelector(".workspace")?.offsetTop || 0;
-  window.scrollTo({ top: options.scroll ? workspaceTop : Math.min(window.scrollY, workspaceTop), behavior: "smooth" });
+  const activePanel = document.querySelector(`[data-view-panel="${view}"]`);
+  const activeTop = activePanel ? Math.max(0, window.scrollY + activePanel.getBoundingClientRect().top - 84) : workspaceTop;
+  window.scrollTo({ top: options.scroll ? activeTop : Math.min(window.scrollY, workspaceTop), behavior: "smooth" });
 }
 
 function resetFilters() {
