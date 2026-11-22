@@ -85,7 +85,7 @@ function bindElements() {
 
 function bindEvents() {
   ["openWatchButton", "heroWatchButton", "sideWatchButton"].forEach((id) => document.getElementById(id)?.addEventListener("click", openWatchDialog));
-  document.getElementById("heroCalendarButton")?.addEventListener("click", () => setView("calendar"));
+  document.getElementById("heroCalendarButton")?.addEventListener("click", () => setView("calendar", { scroll: true }));
   document.getElementById("dataStatusAction")?.addEventListener("click", openSourceDialog);
   document.getElementById("sourceButton")?.addEventListener("click", openSourceDialog);
   document.getElementById("footerSourceButton")?.addEventListener("click", openSourceDialog);
@@ -95,8 +95,8 @@ function bindEvents() {
   document.getElementById("closeInstallButton")?.addEventListener("click", () => els.installDialog.close());
   document.getElementById("installButton")?.addEventListener("click", handleInstallClick);
 
-  document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
-  document.querySelectorAll("[data-view-target]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.viewTarget)));
+  document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view, { scroll: true })));
+  document.querySelectorAll("[data-view-target]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.viewTarget, { scroll: true })));
   document.querySelectorAll("[data-quick-phase]").forEach((button) => button.addEventListener("click", () => {
     state.phase = button.dataset.quickPhase;
     state.region = "전체";
@@ -495,7 +495,8 @@ function setView(view, options = {}) {
     if (view === "feed") url.searchParams.delete("view"); else url.searchParams.set("view", view);
     history.pushState({ view }, "", url);
   }
-  window.scrollTo({ top: Math.min(window.scrollY, document.querySelector(".workspace")?.offsetTop || 0), behavior: "smooth" });
+  const workspaceTop = document.querySelector(".workspace")?.offsetTop || 0;
+  window.scrollTo({ top: options.scroll ? workspaceTop : Math.min(window.scrollY, workspaceTop), behavior: "smooth" });
 }
 
 function resetFilters() {
