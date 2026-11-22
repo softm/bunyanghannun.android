@@ -1,7 +1,372 @@
 package net.softm.bunyanghannun;
-import android.app.Activity;import android.content.Intent;import android.graphics.Color;import android.net.Uri;import android.os.Bundle;import android.view.*;import android.webkit.*;import android.widget.*;import androidx.annotation.Nullable;import softm.hannun.ads.*;import softm.hannun.update.HannunInAppUpdateManager;import java.util.Collections;
-public class MainActivity extends Activity{
- private WebView web;private View failure;private boolean mainFailed;private HannunAds ads;private HannunInAppUpdateManager updater;
- @Override public void onCreate(@Nullable Bundle state){super.onCreate(state);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);FrameLayout content=new FrameLayout(this);root.addView(content,new LinearLayout.LayoutParams(-1,0,1));LinearLayout ad=new LinearLayout(this);root.addView(ad,new LinearLayout.LayoutParams(-1,-2));setContentView(root);web=new WebView(this);content.addView(web,new FrameLayout.LayoutParams(-1,-1));failure=failureView();content.addView(failure,new FrameLayout.LayoutParams(-1,-1));WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);s.setUserAgentString(s.getUserAgentString()+" BunyangHannunAndroid/1.0");HannunWebViewAds.markNativeAds(s);web.setWebViewClient(new WebViewClient(){@Override public void onPageStarted(WebView v,String u,android.graphics.Bitmap b){mainFailed=false;failure.setVisibility(View.GONE);}@Override public void onReceivedError(WebView v,WebResourceRequest r,WebResourceError e){if(r.isForMainFrame())showFailure();}@Override public void onReceivedHttpError(WebView v,WebResourceRequest r,WebResourceResponse e){if(r.isForMainFrame()&&e.getStatusCode()>=400)showFailure();}@Override public void onPageFinished(WebView v,String u){v.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);if(!mainFailed)failure.setVisibility(View.GONE);}@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){Uri u=r.getUrl();if(u.toString().startsWith(BuildConfig.WEB_URL))return false;try{startActivity(new Intent(Intent.ACTION_VIEW,u));}catch(Exception ignored){}return true;}});ads=new HannunAds(this,ad,new HannunAdConfig(getString(R.string.admob_native_ad_unit_id),getString(R.string.admob_adaptive_banner_ad_unit_id),getString(R.string.admob_interstitial_ad_unit_id),getString(R.string.admob_exit_banner_ad_unit_id)));ads.start();updater=new HannunInAppUpdateManager(this,null);if(state==null)loadFresh();else web.restoreState(state);}
- private View failureView(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setGravity(Gravity.CENTER);p.setPadding(dp(28),dp(28),dp(28),dp(28));p.setBackgroundColor(Color.rgb(255,248,250));TextView t=new TextView(this);t.setText("네트워크 연결을 확인해 주세요");t.setTextSize(20);t.setTextColor(Color.rgb(38,53,74));t.setGravity(Gravity.CENTER);p.addView(t,new LinearLayout.LayoutParams(-1,-2));TextView m=new TextView(this);m.setText("연결을 확인한 뒤 다시 시도하면 분양한눈을 이어서 이용할 수 있어요.");m.setTextSize(14);m.setGravity(Gravity.CENTER);m.setPadding(0,dp(14),0,dp(20));p.addView(m,new LinearLayout.LayoutParams(-1,-2));Button b=new Button(this);b.setText("다시 시도");b.setMinHeight(dp(48));b.setOnClickListener(v->loadFresh());p.addView(b,new LinearLayout.LayoutParams(-1,dp(48)));p.setVisibility(View.GONE);return p;}private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}private void showFailure(){mainFailed=true;failure.setVisibility(View.VISIBLE);}private void loadFresh(){mainFailed=false;failure.setVisibility(View.GONE);web.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);web.loadUrl(BuildConfig.WEB_URL,Collections.singletonMap("Cache-Control","no-cache"));}
- @Override public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else if(ads!=null)ads.showExitConfirmation();else super.onBackPressed();}@Override protected void onResume(){super.onResume();if(ads!=null)ads.onResume();if(updater!=null)updater.onResume();}@Override protected void onPause(){if(ads!=null)ads.onPause();if(updater!=null)updater.onPause();super.onPause();}@Override protected void onActivityResult(int a,int b,Intent d){if(updater!=null&&updater.onActivityResult(a,b))return;super.onActivityResult(a,b,d);}@Override protected void onSaveInstanceState(Bundle b){super.onSaveInstanceState(b);if(web!=null)web.saveState(b);}@Override protected void onDestroy(){if(ads!=null)ads.destroy();if(updater!=null)updater.destroy();if(web!=null)web.destroy();super.onDestroy();}}
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Message;
+import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.webkit.WebMessageCompat;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+
+import org.json.JSONObject;
+
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+
+import softm.hannun.ads.HannunAdConfig;
+import softm.hannun.ads.HannunAds;
+import softm.hannun.ads.HannunWebViewAds;
+import softm.hannun.update.HannunInAppUpdateManager;
+
+public final class MainActivity extends ComponentActivity {
+    private static final String BRIDGE_NAME = "CheongyakNative";
+
+    private WebView webView;
+    private ProgressBar progress;
+    private View landingPanel;
+    private View offlinePanel;
+    private boolean mainFrameFailed;
+    private boolean firstContentShown;
+    private HannunAds ads;
+    private HannunInAppUpdateManager appUpdater;
+    private String pendingDocumentText;
+
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (!granted) {
+                Toast.makeText(this, "알림 권한은 설정에서 언제든 허용할 수 있어요.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    private final ActivityResultLauncher<String> calendarDocumentLauncher =
+        registerForActivityResult(new ActivityResultContracts.CreateDocument("text/calendar"), uri -> {
+            String text = pendingDocumentText;
+            pendingDocumentText = null;
+            if (uri == null || text == null) return;
+            try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+                if (output == null) throw new IllegalStateException("No output stream");
+                output.write(text.getBytes(StandardCharsets.UTF_8));
+                Toast.makeText(this, "청약 일정을 저장했어요.", Toast.LENGTH_SHORT).show();
+            } catch (Exception error) {
+                Toast.makeText(this, "일정 파일을 저장하지 못했어요.", Toast.LENGTH_LONG).show();
+            }
+        });
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        webView = findViewById(R.id.webView);
+        progress = findViewById(R.id.progress);
+        landingPanel = findViewById(R.id.landingPanel);
+        offlinePanel = findViewById(R.id.offlinePanel);
+        Button retryButton = findViewById(R.id.retryButton);
+        retryButton.setOnClickListener(view -> loadHomeFresh());
+
+        configureWebView();
+        installBridge();
+        appUpdater = new HannunInAppUpdateManager(this, null);
+        configureAds(findViewById(R.id.adHost));
+        NoticeSyncScheduler.ensureScheduled(this);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (webView.canGoBack()) webView.goBack();
+                else showExitConfirmation();
+            }
+        });
+
+        if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
+            loadHomeFresh();
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void configureWebView() {
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        settings.setSupportMultipleWindows(true);
+        settings.setUserAgentString(settings.getUserAgentString() + " CheongyakHannunAndroid/1.0");
+        if (hasConfiguredAds()) HannunWebViewAds.markNativeAds(settings);
+
+        CookieManager.getInstance().setAcceptCookie(true);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                mainFrameFailed = false;
+                offlinePanel.setVisibility(View.GONE);
+                if (!firstContentShown) {
+                    landingPanel.setVisibility(View.VISIBLE);
+                    webView.setVisibility(View.INVISIBLE);
+                }
+                progress.setVisibility(View.VISIBLE);
+            }
+
+            @Override public void onPageFinished(WebView view, String url) {
+                view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+                progress.setVisibility(View.GONE);
+                if (mainFrameFailed) return;
+                firstContentShown = true;
+                landingPanel.setVisibility(View.GONE);
+                offlinePanel.setVisibility(View.GONE);
+                webView.setVisibility(View.VISIBLE);
+            }
+
+            @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request.isForMainFrame()) showNetworkError();
+            }
+
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 400) showNetworkError();
+            }
+
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (isAppUrl(uri)) return false;
+                return openExternal(uri);
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override public void onProgressChanged(WebView view, int newProgress) {
+                progress.setProgress(newProgress);
+                progress.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
+            }
+
+            @Override public boolean onCreateWindow(
+                WebView view,
+                boolean isDialog,
+                boolean isUserGesture,
+                Message resultMsg
+            ) {
+                if (!isUserGesture || resultMsg == null) return false;
+                WebView popup = new WebView(MainActivity.this);
+                popup.setWebViewClient(new WebViewClient() {
+                    @Override public boolean shouldOverrideUrlLoading(WebView ignored, WebResourceRequest request) {
+                        openExternal(request.getUrl());
+                        popup.destroy();
+                        return true;
+                    }
+
+                    @Override public void onPageStarted(WebView ignored, String url, Bitmap favicon) {
+                        if (url != null && !"about:blank".equals(url)) openExternal(Uri.parse(url));
+                        popup.stopLoading();
+                        popup.destroy();
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popup);
+                resultMsg.sendToTarget();
+                return true;
+            }
+        });
+    }
+
+    @SuppressLint("RequiresFeature")
+    private void installBridge() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
+        Uri configured = Uri.parse(BuildConfig.WEB_URL);
+        String origin = configured.getScheme() + "://" + configured.getAuthority();
+        WebViewCompat.addWebMessageListener(
+            webView,
+            BRIDGE_NAME,
+            new HashSet<>(Collections.singletonList(origin)),
+            (view, message, sourceOrigin, isMainFrame, replyProxy) -> {
+                if (!isMainFrame || !isTrustedOrigin(sourceOrigin) || !isTrustedPage(view.getUrl())) return;
+                handleBridgeMessage(message);
+            }
+        );
+    }
+
+    private void handleBridgeMessage(WebMessageCompat message) {
+        try {
+            JSONObject request = new JSONObject(message.getData());
+            String type = request.optString("type", "");
+            switch (type) {
+                case "saveWatchProfile" -> {
+                    JSONObject profile = request.optJSONObject("profile");
+                    if (profile != null) {
+                        WatchProfileStore.save(this, profile);
+                        NoticeSyncScheduler.enqueueImmediate(this);
+                    }
+                }
+                case "requestNotificationPermission" -> runOnUiThread(this::requestNotificationPermission);
+                case "downloadText" -> {
+                    String text = request.optString("text", "");
+                    String name = safeFilename(request.optString("name", "cheongyak.ics"));
+                    if (!text.trim().isEmpty() && text.length() <= 1_000_000) {
+                        runOnUiThread(() -> {
+                            pendingDocumentText = text;
+                            calendarDocumentLauncher.launch(name);
+                        });
+                    }
+                }
+                default -> { }
+            }
+        } catch (Exception ignored) {
+            // Malformed page messages do not receive native access.
+        }
+    }
+
+    private void configureAds(LinearLayout adHost) {
+        if (!hasConfiguredAds()) {
+            adHost.setVisibility(View.GONE);
+            return;
+        }
+        ads = new HannunAds(this, adHost, new HannunAdConfig(
+            getString(R.string.admob_native_ad_unit_id),
+            getString(R.string.admob_adaptive_banner_ad_unit_id),
+            getString(R.string.admob_interstitial_ad_unit_id),
+            getString(R.string.admob_exit_banner_ad_unit_id)
+        ));
+        ads.start();
+    }
+
+    private boolean hasConfiguredAds() {
+        return !getString(R.string.admob_native_ad_unit_id).trim().isEmpty()
+            || !getString(R.string.admob_adaptive_banner_ad_unit_id).trim().isEmpty()
+            || !getString(R.string.admob_interstitial_ad_unit_id).trim().isEmpty()
+            || !getString(R.string.admob_exit_banner_ad_unit_id).trim().isEmpty();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED) return;
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+    }
+
+    private void loadHomeFresh() {
+        mainFrameFailed = false;
+        offlinePanel.setVisibility(View.GONE);
+        if (!firstContentShown) landingPanel.setVisibility(View.VISIBLE);
+        progress.setVisibility(View.VISIBLE);
+        webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+        webView.loadUrl(BuildConfig.WEB_URL, Collections.singletonMap("Cache-Control", "no-cache"));
+    }
+
+    private void showNetworkError() {
+        mainFrameFailed = true;
+        progress.setVisibility(View.GONE);
+        landingPanel.setVisibility(View.GONE);
+        webView.setVisibility(View.INVISIBLE);
+        offlinePanel.setVisibility(View.VISIBLE);
+    }
+
+    private boolean isAppUrl(Uri uri) {
+        return uri != null && uri.toString().startsWith(BuildConfig.WEB_URL);
+    }
+
+    private boolean isTrustedPage(String url) {
+        return url != null && url.startsWith(BuildConfig.WEB_URL);
+    }
+
+    private boolean isTrustedOrigin(Uri sourceOrigin) {
+        if (sourceOrigin == null) return false;
+        Uri expected = Uri.parse(BuildConfig.WEB_URL);
+        return expected.getScheme().equalsIgnoreCase(sourceOrigin.getScheme())
+            && expected.getHost().equalsIgnoreCase(sourceOrigin.getHost())
+            && expected.getPort() == sourceOrigin.getPort();
+    }
+
+    private boolean openExternal(Uri uri) {
+        if (uri == null) return true;
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        if (!scheme.equals("https") && !scheme.equals("http") && !scheme.equals("tel") && !scheme.equals("mailto")) {
+            return true;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        } catch (Exception error) {
+            Toast.makeText(this, "연결된 앱에서 열 수 없어요.", Toast.LENGTH_SHORT).show();
+        }
+        return true;
+    }
+
+    private static String safeFilename(String value) {
+        String cleaned = value.replaceAll("[\\\\/:*?\"<>|\\r\\n]", "_").trim();
+        if (cleaned.isEmpty()) return "cheongyak.ics";
+        return cleaned.length() > 100 ? cleaned.substring(0, 100) : cleaned;
+    }
+
+    private void showExitConfirmation() {
+        if (ads != null) {
+            ads.showExitConfirmation(this::finishAndRemoveTask);
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("앱을 종료하시겠습니까?")
+            .setMessage("저장한 관심조건과 공고는 그대로 유지됩니다.")
+            .setNegativeButton("계속 이용", null)
+            .setPositiveButton("종료", (dialog, which) -> finishAndRemoveTask())
+            .show();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        appUpdater.onResume();
+        if (ads != null) ads.onResume();
+    }
+
+    @Override protected void onPause() {
+        appUpdater.onPause();
+        if (ads != null) ads.onPause();
+        super.onPause();
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (appUpdater.onActivityResult(requestCode, resultCode)) return;
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        webView.saveState(outState);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override protected void onDestroy() {
+        appUpdater.destroy();
+        if (ads != null) ads.destroy();
+        webView.destroy();
+        super.onDestroy();
+    }
+}
