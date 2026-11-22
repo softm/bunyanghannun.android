@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#8f3658"><link rel="icon" href="./assets/icon-192.png"><link rel="stylesheet" href="./styles.css">
+  <title>내 데이터 삭제 | 청약한눈</title>
+</head>
+<body class="policy-page">
+  <header class="policy-header"><a href="./">청약한눈으로 돌아가기</a></header>
+  <main class="policy-main delete-main">
+    <p class="eyebrow">내 데이터 관리</p><h1>이 기기의 청약 기록 삭제</h1>
+    <p>청약한눈은 계정을 만들거나 서버 보관소에 개인 자료를 저장하지 않습니다. 아래 작업은 이 브라우저에 저장된 관심조건, 저장 공고, 확인한 공고, 준비 체크 항목을 삭제합니다.</p>
+    <div class="delete-card"><strong>삭제되는 항목</strong><ul><li>관심 지역과 주택 유형</li><li>알림 설정과 확인한 공고</li><li>하트로 저장한 관심 공고</li><li>청약 준비 체크 상태</li></ul><p>공식 기관의 청약 신청 내역이나 외부 계정은 삭제하지 않습니다.</p></div>
+    <label class="confirm-delete"><input type="checkbox" id="deleteConfirm"><span>삭제 후 이 브라우저에서 복구할 수 없음을 확인했습니다.</span></label>
+    <button class="primary-button danger-button" id="deleteLocalData" type="button" disabled>내 데이터 삭제</button>
+    <p class="delete-result" id="deleteResult" role="status" aria-live="polite"></p>
+  </main>
+  <script type="module">
+    const confirm=document.querySelector('#deleteConfirm');const button=document.querySelector('#deleteLocalData');const result=document.querySelector('#deleteResult');
+    confirm.addEventListener('change',()=>{button.disabled=!confirm.checked});
+    button.addEventListener('click',()=>{['cheongyak:watch:v1','cheongyak:saved:v1','cheongyak:seen:v1','cheongyak:checklist:v1'].forEach(key=>localStorage.removeItem(key));confirm.checked=false;button.disabled=true;result.textContent='이 기기에 저장된 청약한눈 데이터를 삭제했습니다.';});
+  </script>
+</body>
+</html>

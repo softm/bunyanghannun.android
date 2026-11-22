@@ -1,1 +1,47 @@
-const CACHE='bunyanghannun-shell-v2';const ASSETS=['./','index.html','styles.css','app.js','icon.svg','manifest.webmanifest','data/sample.json','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bunyanghannun-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.mode==='navigate'){e.respondWith(fetch(e.request).catch(()=>caches.match('./')));return}if(u.pathname.includes('/data/live.json'))return;e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{if(r.ok&&u.origin===location.origin)caches.open(CACHE).then(x=>x.put(e.request,r.clone()));return r})))})
+const CACHE_NAME='bunyanghannun-shell-source';
+const BUILD_ASSETS=[];
+const SHELL=[...new Set([
+  './','./?source=pwa','./manifest.webmanifest','./privacy.html','./delete-account.html',
+  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png','./assets/apple-touch-icon.png',
+  ...BUILD_ASSETS
+])];
+
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('bunyanghannun-shell-')&&key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
+});
+
+self.addEventListener('fetch',event=>{
+  const request=event.request;
+  if(request.method!=='GET')return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin||url.pathname.includes('/data/')||url.pathname.includes('/api/'))return;
+  if(request.mode==='navigate'){
+    event.respondWith(fetch(request).then(response=>{
+      if(response.ok)caches.open(CACHE_NAME).then(cache=>cache.put('./',response.clone()));
+      return response;
+    }).catch(()=>caches.match('./')));
+    return;
+  }
+  event.respondWith(caches.match(request).then(cached=>{
+    const refresh=fetch(request).then(response=>{
+      if(response.ok)caches.open(CACHE_NAME).then(cache=>cache.put(request,response.clone()));
+      return response;
+    });
+    if(cached){refresh.catch(()=>{});return cached;}
+    return refresh;
+  }));
+});
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const target=event.notification.data?.url||'./';
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
+    const existing=list.find(client=>'focus' in client);
+    if(existing){existing.navigate(target);return existing.focus();}
+    return clients.openWindow(target);
+  }));
+});

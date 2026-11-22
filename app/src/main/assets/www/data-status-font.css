@@ -1,0 +1,25 @@
+@font-face {
+  font-family:"SUIT Variable";
+  src:url("./assets/fonts/SUIT-Variable.woff2") format("woff2-variations");
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
+
+html,body,button,table {
+  font-family:"SUIT Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+}
+
+body {
+  font-weight:430;
+  letter-spacing:-.012em;
+  line-height:1.58;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+.brand { font-weight:820; letter-spacing:-.045em; }
+.heading h1 { font-weight:840; letter-spacing:-.055em; text-wrap:balance; }
+.metrics strong { font-weight:760; letter-spacing:-.035em; font-variant-numeric:tabular-nums; }
+.panel h2 { font-weight:780; letter-spacing:-.025em; }
+th { font-weight:720; }
