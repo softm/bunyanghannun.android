@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFF8FA"
+            android:visibility="invisible" />
+
+        <LinearLayout
+            android:id="@+id/landingPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFF8FA"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <ImageView
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_launcher" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="청약한눈"
+                android:textColor="#1E3553"
+                android:textSize="27sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="내 조건에 맞는 청약 일정을 준비하고 있어요"
+                android:textColor="#6E6570"
+                android:textSize="15sp" />
+
+            <ProgressBar
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:contentDescription="청약한눈 불러오는 중"
+                android:indeterminate="true"
+                android:indeterminateTint="#8F3658" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="top"
+            android:max="100"
+            android:progressTint="#8F3658" />
+
+        <LinearLayout
+            android:id="@+id/offlinePanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFF8FA"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="서비스에 연결할 수 없어요"
+                android:textColor="#1E3553"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="네트워크 연결을 확인한 뒤 다시 시도해 주세요.\n저장한 관심조건과 앱 데이터는 삭제되지 않습니다."
+                android:textColor="#6E6570"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/retryButton"
+                android:layout_width="160dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="22dp"
+                android:minHeight="48dp"
+                android:text="다시 시도"
+                android:textAllCaps="false" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/adHost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone" />
+</LinearLayout>
