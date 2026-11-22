@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">청약한눈</title>
+  <desc id="desc">장밋빛 집과 알림 종을 결합한 아이콘</desc>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="42" x2="438" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D95C88"/>
+      <stop offset="1" stop-color="#8F3658"/>
+    </linearGradient>
+    <linearGradient id="window" x1="210" y1="228" x2="302" y2="342" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE3EC"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="132" fill="url(#bg)"/>
+  <path d="M117 245 256 128l139 117v146a31 31 0 0 1-31 31H148a31 31 0 0 1-31-31V245Z" fill="#FFF9FB"/>
+  <path d="m94 257 162-136 162 136" fill="none" stroke="#FFF9FB" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="209" y="256" width="94" height="166" rx="28" fill="url(#window)"/>
+  <circle cx="280" cy="337" r="8" fill="#9A3B5E"/>
+  <circle cx="374" cy="140" r="72" fill="#39263B"/>
+  <path d="M374 98c-22 0-39 18-39 40v28l-15 22h108l-15-22v-28c0-22-17-40-39-40Z" fill="#FFFFFF"/>
+  <path d="M359 194c3 11 8 18 15 18s12-7 15-18" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+</svg>
