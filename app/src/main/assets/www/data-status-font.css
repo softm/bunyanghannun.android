@@ -11,15 +11,19 @@ html,body,button,table {
 }
 
 body {
-  font-weight:430;
-  letter-spacing:-.012em;
-  line-height:1.58;
+  font-weight:400;
+  letter-spacing:-.006em;
+  line-height:1.62;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
 
-.brand { font-weight:820; letter-spacing:-.045em; }
-.heading h1 { font-weight:840; letter-spacing:-.055em; text-wrap:balance; }
-.metrics strong { font-weight:760; letter-spacing:-.035em; font-variant-numeric:tabular-nums; }
-.panel h2 { font-weight:780; letter-spacing:-.025em; }
-th { font-weight:720; }
+.brand { font-weight:680; letter-spacing:-.025em; }
+.heading h1 { font-weight:700; line-height:1.18; letter-spacing:-.035em; text-wrap:balance; }
+.heading p { font-weight:380; letter-spacing:0; }
+.metrics h2 { font-weight:520; letter-spacing:-.01em; }
+.metrics strong { font-weight:650; letter-spacing:-.025em; font-variant-numeric:tabular-nums; }
+.metrics small { font-weight:380; letter-spacing:0; }
+.panel h2 { font-weight:650; letter-spacing:-.018em; }
+dt,th { font-weight:620; letter-spacing:-.01em; }
+dd,td { font-weight:390; }

@@ -38,7 +38,7 @@
 
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
-body { margin:0; min-width:320px; background:var(--canvas); color:var(--ink); font-size:16px; line-height:1.58; font-weight:430; letter-spacing:-.012em; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+body { margin:0; min-width:320px; background:var(--canvas); color:var(--ink); font-size:16px; line-height:1.62; font-weight:400; letter-spacing:-.006em; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
 body:has(dialog[open]) { overflow:hidden; }
 button,input,select { font:inherit; }
 button,a { -webkit-tap-highlight-color:transparent; }
@@ -53,7 +53,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { 
 .brand { display:flex; align-items:center; gap:10px; min-width:0; color:var(--ink); text-decoration:none; }
 .brand img { width:42px; height:42px; border-radius:13px; box-shadow:0 6px 16px rgba(143,54,88,.2); }
 .brand span { display:grid; line-height:1.16; }
-.brand strong { font-size:18px; font-weight:820; letter-spacing:-.045em; }
+.brand strong { font-size:18px; font-weight:680; letter-spacing:-.025em; }
 .brand small { margin-top:4px; color:var(--muted); font-size:12px; }
 .header-actions { display:flex; align-items:center; gap:8px; }
 .icon-button,.icon-text-button,.header-alert-button { min-width:48px; min-height:48px; border:1px solid var(--line); border-radius:14px; background:var(--surface); cursor:pointer; }
@@ -67,7 +67,7 @@ main { min-height:70vh; }
 .hero-shell { max-width:1240px; margin:0 auto; padding:46px 24px 32px; display:grid; grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr); gap:42px; align-items:center; }
 .hero-copy { padding:8px 0; }
 .eyebrow { margin:0 0 9px; color:var(--rose-700); font-size:13px; font-weight:800; letter-spacing:.01em; }
-.hero-copy h1 { margin:0; max-width:690px; color:var(--navy); font-size:clamp(38px,5vw,62px); font-weight:840; line-height:1.08; letter-spacing:-.058em; text-wrap:balance; }
+.hero-copy h1 { margin:0; max-width:690px; color:var(--navy); font-size:clamp(38px,5vw,62px); font-weight:700; line-height:1.12; letter-spacing:-.04em; text-wrap:balance; }
 .hero-copy h1 em { color:var(--rose-700); font-style:normal; }
 .hero-copy>p:not(.eyebrow) { max-width:580px; margin:20px 0 0; color:var(--muted); font-size:17px; }
 .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
