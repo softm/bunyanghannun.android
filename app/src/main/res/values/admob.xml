@@ -1,1 +1,9 @@
-<resources><string name="admob_native_ad_unit_id"></string><string name="admob_adaptive_banner_ad_unit_id"></string><string name="admob_interstitial_ad_unit_id"></string><string name="admob_exit_banner_ad_unit_id"></string></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 운영 ID는 autorunnavi@gmail.com 계정에서 앱·지면별 발급 전까지 비활성입니다. -->
+    <string name="admob_app_id" translatable="false"></string>
+    <string name="admob_native_ad_unit_id" translatable="false"></string>
+    <string name="admob_adaptive_banner_ad_unit_id" translatable="false"></string>
+    <string name="admob_interstitial_ad_unit_id" translatable="false"></string>
+    <string name="admob_exit_banner_ad_unit_id" translatable="false"></string>
+</resources>
