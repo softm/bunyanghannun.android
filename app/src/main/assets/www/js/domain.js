@@ -197,4 +197,3 @@ export function sanitizeWatchProfile(value = {}) {
     confirmedAt: typeof value.confirmedAt === "string" ? value.confirmedAt : null
   };
 }
-

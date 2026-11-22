@@ -652,4 +652,3 @@ function persistJson(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); }
   catch { /* Storage can be unavailable in private browsing. */ }
 }
-
