@@ -1,0 +1,1 @@
+package net.softm.bunyanghannun;import org.junit.Test;import static org.junit.Assert.*;public class ConfigTest{@Test public void officialUrlUsesHttps(){assertTrue("https://softm.github.io/bunyanghannun/".startsWith("https://"));}}
