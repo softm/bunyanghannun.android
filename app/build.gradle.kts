@@ -68,7 +68,7 @@ dependencies {
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.webkit:webkit:1.17.1")
     implementation("androidx.work:work-runtime:2.12.0")
-    implementation("com.github.softm:hannun-admob-android:1.0.5")
+    implementation("com.github.softm:hannun-admob-android:1.0.6")
     implementation("com.github.softm:hannun-in-app-update-android:1.0.0")
 
     testImplementation("junit:junit:4.13.2")
