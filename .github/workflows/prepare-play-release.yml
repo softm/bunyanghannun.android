@@ -1,0 +1,71 @@
+name: Prepare verified Play release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK 36
+        shell: bash
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - name: Validate app-specific ad configuration
+        run: python3 scripts/validate_ads.py
+      - name: Restore and validate common upload key
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/softm.keystore.jks"
+          echo '7d7a15b6659180f427528c3684d892902e157cbda88a4c0cd7588507c94ecf62  '"$RUNNER_TEMP/softm.keystore.jks" | sha256sum --check
+      - name: Build signed Release APK and AAB
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/softm.keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew testDebugUnitTest lintRelease assembleRelease bundleRelease --stacktrace
+      - name: Verify signed outputs
+        shell: bash
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$AAB"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          jarsigner -verify "$AAB"
+      - name: Create private draft release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -1)
+          CODE=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -1)
+          test -n "$VERSION"
+          test -n "$CODE"
+          TAG="play-$CODE"
+          APK="bunyanghannun-$CODE-release.apk"
+          AAB="bunyanghannun-$CODE-release.aab"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
+          cp app/build/outputs/bundle/release/app-release.aab "$AAB"
+          shasum -a 256 "$APK" "$AAB" > "bunyanghannun-$CODE-SHA256SUMS.txt"
+          gh release create "$TAG" "$APK" "$AAB" "bunyanghannun-$CODE-SHA256SUMS.txt" \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "분양한눈 $VERSION ($CODE) Play 배포 준비" \
+            --notes "공통 softm.keystore.jks로 서명하고 실제 Release 검증에 사용할 비공개 Draft 산출물입니다."
