@@ -27,7 +27,9 @@ export function parseDate(value) {
   const day = Number(match[3]);
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const date = new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00+09:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  const normalized = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  return normalized === `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` ? date : null;
 }
 
 export function toDateKey(value) {
@@ -86,7 +88,9 @@ export function filterNotices(notices, filters = {}, now = new Date()) {
   return notices.filter((notice) => {
     if (filters.region && filters.region !== "전체" && notice.region !== filters.region) return false;
     if (filters.type && filters.type !== "전체" && notice.type !== filters.type && notice.subtype !== filters.type) return false;
-    if (filters.phase && filters.phase !== "all" && getNoticePhase(notice, now).id !== filters.phase) return false;
+    const phase = getNoticePhase(notice, now).id;
+    if (filters.phase === "active" && !["open", "upcoming", "announced"].includes(phase)) return false;
+    if (filters.phase && !["all", "active"].includes(filters.phase) && phase !== filters.phase) return false;
     if (filters.savedIds && !filters.savedIds.has(notice.id)) return false;
     if (!query) return true;
     const haystack = [notice.title, notice.region, notice.district, notice.address, notice.type, notice.subtype, notice.sourceName]

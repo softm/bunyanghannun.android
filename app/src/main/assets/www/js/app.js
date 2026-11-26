@@ -16,6 +16,7 @@ import {
   todayKey,
   toDateKey
 } from "./domain.js";
+import { mountBottomAd } from "./adfit.js";
 
 const STORAGE = {
   watch: "cheongyak:watch:v1",
@@ -23,24 +24,27 @@ const STORAGE = {
   seen: "cheongyak:seen:v1",
   checklist: "cheongyak:checklist:v1"
 };
+const urlParams = new URLSearchParams(location.search);
+const allowedPhases = new Set(["active", "open", "upcoming", "announced", "closed", "all"]);
 
 const state = {
   envelope: { status: "loading", notices: [], sources: [] },
   notices: [],
   view: "feed",
-  region: "전체",
-  type: "전체",
-  phase: "all",
-  query: "",
-  sort: "deadline",
+  region: urlParams.get("region") || "전체",
+  type: urlParams.get("type") || "전체",
+  phase: allowedPhases.has(urlParams.get("phase")) ? urlParams.get("phase") : "active",
+  query: urlParams.get("q") || "",
+  sort: ["deadline", "recent", "title"].includes(urlParams.get("sort")) ? urlParams.get("sort") : "deadline",
   saved: new Set(readJson(STORAGE.saved, [])),
   seen: new Set(readJson(STORAGE.seen, [])),
   watch: sanitizeWatchProfile(readJson(STORAGE.watch, DEFAULT_WATCH_PROFILE)),
   calendarEvents: [],
   calendarMonth: new Date(),
   selectedDate: todayKey(),
+  visibleCount: 24,
   deferredInstallPrompt: null,
-  demo: new URLSearchParams(location.search).get("demo") === "1"
+  demo: urlParams.get("demo") === "1"
 };
 
 const els = {};
@@ -51,10 +55,14 @@ window.setTimeout(hideSplash, 5000);
 
 async function init() {
   bindElements();
+  els.searchInput.value = state.query;
+  els.sortSelect.value = state.sort;
   renderWatchChoices();
   restoreChecklist();
   bindEvents();
+  configureWatchMode();
   configureInstallEntry();
+  mountBottomAd();
   setInitialView();
   document.querySelector("#todayDate").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" }).format(new Date());
   try {
@@ -75,11 +83,11 @@ async function init() {
 function bindElements() {
   [
     "dataBanner", "dataStatusTitle", "dataStatusCopy", "noticeGrid", "noticeEmpty", "savedGrid", "savedEmpty",
-    "resultSummary", "sortSelect", "searchForm", "searchInput", "regionFilters", "typeFilters", "watchDialog",
+    "resultSummary", "sortSelect", "searchForm", "searchInput", "regionFilters", "typeFilters", "phaseFilters", "watchDialog",
     "watchForm", "watchRegions", "watchTypes", "watchTitle", "watchSummary", "permissionNote", "detailDialog",
     "detailContent", "detailSource", "detailDialogTitle", "sourceDialog", "sourceStatusList", "calendarGrid",
     "calendarEvents", "calendarTitle", "savedCountBadge", "deadlineList", "toast", "installButton", "installDialog",
-    "installGuide", "prepareChecklist"
+    "installGuide", "prepareChecklist", "loadMoreButton"
   ].forEach((id) => { els[id] = document.getElementById(id); });
 }
 
@@ -96,11 +104,13 @@ function bindEvents() {
   document.getElementById("installButton")?.addEventListener("click", handleInstallClick);
 
   document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view, { scroll: true })));
+  document.querySelector("[role=tablist]")?.addEventListener("keydown", handleTabKeydown);
   document.querySelectorAll("[data-view-target]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.viewTarget, { scroll: true })));
   document.querySelectorAll("[data-quick-phase]").forEach((button) => button.addEventListener("click", () => {
     state.phase = button.dataset.quickPhase;
     state.region = "전체";
     state.type = "전체";
+    state.visibleCount = 24;
     setView("feed");
     renderFilters();
     renderFeed();
@@ -110,13 +120,16 @@ function bindEvents() {
   els.searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
     state.query = els.searchInput.value.trim();
+    state.visibleCount = 24;
     renderFeed();
   });
   els.searchInput.addEventListener("input", () => {
     state.query = els.searchInput.value.trim();
+    state.visibleCount = 24;
     renderFeed();
   });
-  els.sortSelect.addEventListener("change", () => { state.sort = els.sortSelect.value; renderFeed(); });
+  els.sortSelect.addEventListener("change", () => { state.sort = els.sortSelect.value; state.visibleCount = 24; renderFeed(); });
+  els.loadMoreButton.addEventListener("click", () => { state.visibleCount += 24; renderFeed(); });
   document.getElementById("resetFiltersButton")?.addEventListener("click", resetFilters);
   document.getElementById("emptyResetButton")?.addEventListener("click", resetFilters);
 
@@ -178,8 +191,15 @@ function renderDataStatus() {
     return;
   }
   if (status === "ready") {
-    els.dataStatusTitle.textContent = `공식 공고 ${count.toLocaleString("ko-KR")}건 최신 확인`;
-    els.dataStatusCopy.textContent = state.envelope.generatedAt ? `${formatTimestamp(state.envelope.generatedAt)} 기준` : "갱신 기준 확인 중";
+    const age = dataAgeHours(state.envelope.generatedAt);
+    if (age !== null && age >= 24) {
+      els.dataBanner.classList.add("warning");
+      els.dataStatusTitle.textContent = `공식 공고 ${count.toLocaleString("ko-KR")}건 · 갱신 지연`;
+      els.dataStatusCopy.textContent = `${relativeDataAge(age)} 마지막 확인 · 신청 전 기관 원문을 확인하세요.`;
+      return;
+    }
+    els.dataStatusTitle.textContent = `공식 공고 ${count.toLocaleString("ko-KR")}건 확인`;
+    els.dataStatusCopy.textContent = age === null ? "갱신 기준 확인 중" : `${relativeDataAge(age)} 갱신`;
     return;
   }
   if (status === "partial") {
@@ -197,6 +217,17 @@ function renderDataStatus() {
   els.dataBanner.classList.add("error");
   els.dataStatusTitle.textContent = "공식 공고를 불러오지 못했어요";
   els.dataStatusCopy.textContent = "기관 원문은 계속 이용할 수 있습니다.";
+}
+
+function dataAgeHours(value) {
+  const timestamp = Date.parse(value || "");
+  return Number.isFinite(timestamp) ? Math.max(0, (Date.now() - timestamp) / 3_600_000) : null;
+}
+
+function relativeDataAge(hours) {
+  if (hours < 1) return "1시간 이내";
+  if (hours < 24) return `${Math.floor(hours)}시간 전`;
+  return `${Math.floor(hours / 24)}일 전`;
 }
 
 function renderSummary() {
@@ -222,11 +253,14 @@ function renderSummary() {
 function renderFilters() {
   const availableRegions = [...new Set(state.notices.map((notice) => notice.region).filter(Boolean))];
   const regions = ["전체", ...REGIONS.filter((region) => availableRegions.includes(region)), ...availableRegions.filter((region) => !REGIONS.includes(region))];
-  els.regionFilters.innerHTML = regions.map((region) => `<button type="button" class="${state.region === region ? "active" : ""}" data-region="${escapeAttribute(region)}">${escapeHtml(region)}</button>`).join("");
-  els.regionFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.region = button.dataset.region; state.phase = "all"; renderFilters(); renderFeed(); }));
+  els.regionFilters.innerHTML = regions.map((region) => `<button type="button" class="${state.region === region ? "active" : ""}" aria-pressed="${state.region === region}" data-region="${escapeAttribute(region)}">${escapeHtml(region)}</button>`).join("");
+  els.regionFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.region = button.dataset.region; state.visibleCount = 24; renderFilters(); renderFeed(); }));
   const featuredTypes = ["전체", "민간분양", "공공분양", "공공임대", "무순위", "오피스텔", "민간임대"];
-  els.typeFilters.innerHTML = featuredTypes.map((type) => `<button type="button" class="${state.type === type ? "active" : ""}" data-type="${escapeAttribute(type)}">${escapeHtml(type)}</button>`).join("");
-  els.typeFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.type = button.dataset.type; state.phase = "all"; renderFilters(); renderFeed(); }));
+  els.typeFilters.innerHTML = featuredTypes.map((type) => `<button type="button" class="${state.type === type ? "active" : ""}" aria-pressed="${state.type === type}" data-type="${escapeAttribute(type)}">${escapeHtml(type)}</button>`).join("");
+  els.typeFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.type = button.dataset.type; state.visibleCount = 24; renderFilters(); renderFeed(); }));
+  const phases = [["active", "진행·예정"], ["open", "접수중"], ["upcoming", "접수예정"], ["announced", "새 공고"], ["closed", "지난 공고"], ["all", "전체"]];
+  els.phaseFilters.innerHTML = phases.map(([value, label]) => `<button type="button" class="${state.phase === value ? "active" : ""}" aria-pressed="${state.phase === value}" data-phase="${value}">${label}</button>`).join("");
+  els.phaseFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.phase = button.dataset.phase; state.visibleCount = 24; renderFilters(); renderFeed(); }));
 }
 
 function renderFeed() {
@@ -236,9 +270,13 @@ function renderFeed() {
     phase: state.phase,
     query: state.query
   }), state.sort);
-  els.noticeGrid.innerHTML = filtered.map(renderNoticeCard).join("");
+  const visible = filtered.slice(0, state.visibleCount);
+  els.noticeGrid.innerHTML = visible.map(renderNoticeCard).join("");
   els.noticeEmpty.hidden = filtered.length > 0;
-  els.resultSummary.textContent = `${filtered.length.toLocaleString("ko-KR")}개 공고${state.phase !== "all" ? ` · ${phaseLabel(state.phase)}` : ""}`;
+  els.loadMoreButton.hidden = visible.length >= filtered.length;
+  els.loadMoreButton.textContent = `공고 더 보기 (${(filtered.length - visible.length).toLocaleString("ko-KR")}개 남음)`;
+  els.resultSummary.textContent = `${filtered.length.toLocaleString("ko-KR")}개 공고${visible.length < filtered.length ? ` · ${visible.length.toLocaleString("ko-KR")}개 표시` : ""}${state.phase !== "all" ? ` · ${phaseLabel(state.phase)}` : ""}`;
+  syncBrowseUrl();
 }
 
 function renderSaved() {
@@ -368,7 +406,7 @@ function openWatchDialog() {
   els.watchForm.elements.deadline1.checked = state.watch.deadline1;
   els.permissionNote.textContent = isAndroidApp()
     ? "Android 앱이 약 6시간마다 공식 공고를 확인합니다. 시스템 절전 상태에 따라 알림 시각은 조금 늦어질 수 있어요."
-    : "웹은 다음 방문 때 새 공고를 알려드리고, 캘린더 저장으로 마감을 챙길 수 있어요.";
+    : "웹은 방문할 때 새 공고를 표시하고, 캘린더 저장으로 마감을 챙길 수 있어요. 웹이 닫혀 있을 때 푸시 알림을 보내지는 않습니다.";
   showDialog(els.watchDialog);
 }
 
@@ -390,13 +428,14 @@ async function handleWatchSubmit(event) {
   postNative({ type: "saveWatchProfile", profile: state.watch });
   if (isAndroidApp()) {
     postNative({ type: "requestNotificationPermission" });
-  } else if ("Notification" in window && Notification.permission === "default") {
-    try { await Notification.requestPermission(); } catch { /* Browser may reject outside a secure context. */ }
   }
+  const baseline = state.notices.filter((notice) => matchesWatchProfile(notice, state.watch)).map((notice) => notice.id);
+  baseline.forEach((id) => state.seen.add(id));
+  persistJson(STORAGE.seen, [...state.seen].slice(-1200));
   els.watchDialog.close();
   renderWatchSummary();
   renderSummary();
-  showToast("내 청약 알림 조건을 저장했어요.");
+  showToast(isAndroidApp() ? "내 분양 알림 조건을 저장했어요." : "관심조건을 이 기기에 저장했어요.");
 }
 
 function disableWatch() {
@@ -406,7 +445,7 @@ function disableWatch() {
   els.watchDialog.close();
   renderWatchSummary();
   renderSummary();
-  showToast("청약 알림을 껐어요.");
+  showToast("저장한 관심조건을 지웠어요.");
 }
 
 function renderWatchSummary() {
@@ -415,8 +454,19 @@ function renderWatchSummary() {
     els.watchSummary.textContent = "관심 지역과 주택 유형을 선택해 새 공고와 마감 일정을 받아보세요.";
     return;
   }
-  els.watchTitle.textContent = "알림이 준비됐어요";
-  els.watchSummary.textContent = `${watchLabel(state.watch)} · 새 공고와 마감 일정을 확인합니다.`;
+  els.watchTitle.textContent = isAndroidApp() ? "알림이 준비됐어요" : "관심조건을 저장했어요";
+  els.watchSummary.textContent = `${watchLabel(state.watch)} · 맞는 공고부터 보여드려요.`;
+}
+
+function configureWatchMode() {
+  const label = document.getElementById("headerWatchLabel");
+  const dialogTitle = document.getElementById("watchDialogTitle");
+  const saveButton = document.getElementById("saveWatchButton");
+  if (!isAndroidApp()) return;
+  if (label) label.textContent = "알림 설정";
+  if (dialogTitle) dialogTitle.textContent = "내 분양 알림";
+  if (saveButton) saveButton.textContent = "알림 저장";
+  document.getElementById("notificationOptions").hidden = false;
 }
 
 function watchLabel(profile) {
@@ -486,8 +536,16 @@ function setView(view, options = {}) {
   if (!["feed", "calendar", "saved", "prepare"].includes(view)) view = "feed";
   state.view = view;
   document.querySelectorAll("[data-view-panel]").forEach((panel) => { const active = panel.dataset.viewPanel === view; panel.hidden = !active; panel.classList.toggle("active", active); });
-  document.querySelectorAll("[data-view]").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.view === view)));
-  document.querySelectorAll(".bottom-nav [data-view-target]").forEach((button) => button.classList.toggle("active", button.dataset.viewTarget === view));
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    const active = button.dataset.view === view;
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll(".bottom-nav [data-view-target]").forEach((button) => {
+    const active = button.dataset.viewTarget === view;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
+  });
   if (view === "calendar") renderCalendar();
   if (view === "saved") renderSaved();
   if (options.history !== false) {
@@ -501,12 +559,34 @@ function setView(view, options = {}) {
   window.scrollTo({ top: options.scroll ? activeTop : Math.min(window.scrollY, workspaceTop), behavior: "smooth" });
 }
 
+function handleTabKeydown(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  const tabs = [...document.querySelectorAll('[role="tab"][data-view]')];
+  const current = Math.max(0, tabs.indexOf(document.activeElement));
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  event.preventDefault();
+  tabs[next].focus();
+  setView(tabs[next].dataset.view);
+}
+
+function syncBrowseUrl() {
+  const url = new URL(location.href);
+  const setOrDelete = (key, value, defaultValue) => value && value !== defaultValue ? url.searchParams.set(key, value) : url.searchParams.delete(key);
+  setOrDelete("region", state.region, "전체");
+  setOrDelete("type", state.type, "전체");
+  setOrDelete("phase", state.phase, "active");
+  setOrDelete("sort", state.sort, "deadline");
+  setOrDelete("q", state.query, "");
+  history.replaceState(history.state, "", url);
+}
+
 function resetFilters() {
   state.region = "전체";
   state.type = "전체";
-  state.phase = "all";
+  state.phase = "active";
   state.query = "";
   els.searchInput.value = "";
+  state.visibleCount = 24;
   renderFilters();
   renderFeed();
 }
@@ -527,16 +607,8 @@ async function notifyNewMatches() {
   const fresh = matched.filter((notice) => !state.seen.has(notice.id));
   matched.forEach((notice) => state.seen.add(notice.id));
   persistJson(STORAGE.seen, [...state.seen].slice(-1200));
-  if (!fresh.length || isAndroidApp() || !("Notification" in window) || Notification.permission !== "granted") return;
-  const registration = await navigator.serviceWorker?.ready?.catch(() => null);
-  if (!registration) return;
-  await registration.showNotification(`청약한눈 · 새 관심 공고 ${fresh.length}건`, {
-    body: fresh.length === 1 ? fresh[0].title : `${fresh[0].title} 외 ${fresh.length - 1}건`,
-    icon: "./assets/icon-192.png",
-    badge: "./assets/icon-192.png",
-    tag: `new-${state.envelope.generatedAt || Date.now()}`,
-    data: { url: "./?view=feed" }
-  });
+  if (!fresh.length || isAndroidApp()) return;
+  showToast(`관심조건에 맞는 새 공고 ${fresh.length.toLocaleString("ko-KR")}건을 확인했어요.`);
 }
 
 function configureInstallEntry() {
@@ -626,7 +698,7 @@ function formatTimestamp(value) {
 }
 
 function phaseLabel(id) {
-  return ({ open: "접수중", upcoming: "접수예정", announced: "새 공고", closed: "접수 마감" })[id] || "전체";
+  return ({ active: "진행·예정", open: "접수중", upcoming: "접수예정", announced: "새 공고", closed: "지난 공고" })[id] || "전체";
 }
 
 function safeOfficialUrl(value) {
