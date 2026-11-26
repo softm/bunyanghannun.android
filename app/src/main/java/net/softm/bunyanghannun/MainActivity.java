@@ -262,10 +262,11 @@ public final class MainActivity extends ComponentActivity {
     }
 
     private boolean hasConfiguredAds() {
-        return !getString(R.string.admob_native_ad_unit_id).trim().isEmpty()
-            || !getString(R.string.admob_adaptive_banner_ad_unit_id).trim().isEmpty()
-            || !getString(R.string.admob_interstitial_ad_unit_id).trim().isEmpty()
-            || !getString(R.string.admob_exit_banner_ad_unit_id).trim().isEmpty();
+        return !getString(R.string.admob_app_id).trim().isEmpty()
+            && !getString(R.string.admob_native_ad_unit_id).trim().isEmpty()
+            && !getString(R.string.admob_adaptive_banner_ad_unit_id).trim().isEmpty()
+            && !getString(R.string.admob_interstitial_ad_unit_id).trim().isEmpty()
+            && !getString(R.string.admob_exit_banner_ad_unit_id).trim().isEmpty();
     }
 
     private void requestNotificationPermission() {
