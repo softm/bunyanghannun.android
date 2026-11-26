@@ -2,6 +2,47 @@ const $ = (selector) => document.querySelector(selector);
 const formatCount = (value) => Number(value || 0).toLocaleString("ko-KR");
 const statusLabels = { ready: "정상", partial: "일부 정상", awaiting_credentials: "인증 준비 중", error: "오류", demo: "데모" };
 
+function safeOfficialUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.href : "#";
+  } catch { return "#"; }
+}
+
+function dataAgeHours(value) {
+  const timestamp = Date.parse(value || "");
+  return Number.isFinite(timestamp) ? Math.max(0, (Date.now() - timestamp) / 3_600_000) : null;
+}
+
+function renderSources(sources, counts) {
+  const body = $("#sources");
+  body.replaceChildren(...sources.map((source) => {
+    const row = document.createElement("tr");
+    const name = document.createElement("td");
+    const nameStrong = document.createElement("b");
+    nameStrong.textContent = source.name || "공식기관";
+    name.append(nameStrong);
+    const status = document.createElement("td");
+    const badge = document.createElement("span");
+    badge.className = `badge ${source.status === "error" ? "error" : ""}`;
+    badge.textContent = statusLabels[source.status] || source.status || "확인 중";
+    status.append(badge);
+    const count = document.createElement("td");
+    count.textContent = `${formatCount(counts[source.id])}건`;
+    const message = document.createElement("td");
+    message.textContent = source.message || "상태 확인 중";
+    const linkCell = document.createElement("td");
+    const link = document.createElement("a");
+    link.href = safeOfficialUrl(source.officialUrl);
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "공식 출처";
+    linkCell.append(link);
+    row.append(name, status, count, message, linkCell);
+    return row;
+  }));
+}
+
 function formatTimestamp(value) {
   if (!value) return "—";
   const parsed = new Date(value);
@@ -33,10 +74,14 @@ async function loadStatus() {
     const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
     const next = items.filter((item) => item.applyStart >= today).sort((a, b) => a.applyStart.localeCompare(b.applyStart))[0];
     $("#next-apply").textContent = next ? `${next.applyStart} · ${next.title}` : "예정 일정 없음";
-    $("#sources").innerHTML = sources.map((source) => `<tr><td><b>${source.name}</b></td><td><span class="badge ${source.status === "error" ? "error" : ""}">${statusLabels[source.status] || source.status}</span></td><td>${formatCount(counts[source.id])}건</td><td>${source.message || "상태 확인 중"}</td><td><a href="${source.officialUrl}" target="_blank" rel="noopener">공식 출처 ↗</a></td></tr>`).join("");
-    notice.className = `notice ${envelope.status === "ready" ? "ok" : envelope.status === "error" ? "error" : ""}`;
-    notice.textContent = envelope.status === "ready"
+    renderSources(sources, counts);
+    const age = dataAgeHours(envelope.generatedAt);
+    const delayed = age !== null && age >= 24;
+    notice.className = `notice ${envelope.status === "ready" && !delayed ? "ok" : envelope.status === "error" ? "error" : ""}`;
+    notice.textContent = envelope.status === "ready" && !delayed
       ? `공식 공고 ${formatCount(items.length)}건을 정상 제공하고 있습니다. 세 원천이 모두 정상입니다.`
+      : delayed
+        ? `공식 공고 ${formatCount(items.length)}건을 제공 중이지만 마지막 갱신이 ${Math.floor(age / 24)}일 전입니다. 신청 전 기관 원문을 확인해 주세요.`
       : `공식 공고 ${formatCount(items.length)}건을 제공 중입니다. 원천별 상태를 확인해 주세요.`;
   } catch (error) {
     notice.className = "notice error";

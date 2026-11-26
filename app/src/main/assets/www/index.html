@@ -48,7 +48,7 @@
       </button>
       <button class="header-alert-button" id="openWatchButton" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 13h4"/></svg>
-        <span>알림 설정</span>
+        <span id="headerWatchLabel">관심조건</span>
       </button>
     </div>
   </header>
@@ -90,7 +90,7 @@
         <section class="side-card watch-card">
           <div class="side-card-title">
             <span class="soft-icon bell-icon" aria-hidden="true"></span>
-            <div><small>내 청약 알림</small><strong id="watchTitle">아직 조건이 없어요</strong></div>
+            <div><small>내 관심조건</small><strong id="watchTitle">아직 조건이 없어요</strong></div>
           </div>
           <p id="watchSummary">관심 지역과 주택 유형을 선택해 새 공고와 마감 일정을 받아보세요.</p>
           <button class="wide-soft-button" id="sideWatchButton" type="button">관심조건 설정</button>
@@ -109,13 +109,13 @@
 
       <div class="main-panel">
         <div class="view-tabs" role="tablist" aria-label="청약한눈 메뉴">
-          <button type="button" role="tab" aria-selected="true" data-view="feed">맞춤 공고</button>
-          <button type="button" role="tab" aria-selected="false" data-view="calendar">캘린더</button>
-          <button type="button" role="tab" aria-selected="false" data-view="saved">관심 공고 <span id="savedCountBadge">0</span></button>
-          <button type="button" role="tab" aria-selected="false" data-view="prepare">청약 준비</button>
+          <button id="feedTab" type="button" role="tab" aria-controls="feedView" aria-selected="true" tabindex="0" data-view="feed">맞춤 공고</button>
+          <button id="calendarTab" type="button" role="tab" aria-controls="calendarView" aria-selected="false" tabindex="-1" data-view="calendar">캘린더</button>
+          <button id="savedTab" type="button" role="tab" aria-controls="savedView" aria-selected="false" tabindex="-1" data-view="saved">관심 공고 <span id="savedCountBadge">0</span></button>
+          <button id="prepareTab" type="button" role="tab" aria-controls="prepareView" aria-selected="false" tabindex="-1" data-view="prepare">청약 준비</button>
         </div>
 
-        <section class="view active" id="feedView" data-view-panel="feed" role="tabpanel">
+        <section class="view active" id="feedView" data-view-panel="feed" role="tabpanel" aria-labelledby="feedTab">
           <div class="feed-heading">
             <div><p class="eyebrow">공식 공고 모아보기</p><h2>지금 챙겨볼 청약</h2></div>
             <label class="sort-control">정렬
@@ -135,12 +135,14 @@
 
           <div class="filter-row" id="regionFilters" aria-label="지역 필터"></div>
           <div class="filter-row type-filters" id="typeFilters" aria-label="주택 유형 필터"></div>
+          <div class="filter-row phase-filters" id="phaseFilters" aria-label="접수 상태 필터"></div>
 
           <div class="result-bar">
-            <span id="resultSummary">공고를 불러오는 중</span>
+            <span id="resultSummary" role="status" aria-live="polite">공고를 불러오는 중</span>
             <button type="button" id="resetFiltersButton">필터 초기화</button>
           </div>
-          <div class="notice-grid" id="noticeGrid" aria-live="polite"></div>
+          <div class="notice-grid" id="noticeGrid"></div>
+          <button class="load-more-button" id="loadMoreButton" type="button" hidden>공고 더 보기</button>
           <div class="empty-state" id="noticeEmpty" hidden>
             <span aria-hidden="true">⌕</span>
             <strong>조건에 맞는 공고가 없어요</strong>
@@ -149,7 +151,7 @@
           </div>
         </section>
 
-        <section class="view" id="calendarView" data-view-panel="calendar" role="tabpanel" hidden>
+        <section class="view" id="calendarView" data-view-panel="calendar" role="tabpanel" aria-labelledby="calendarTab" hidden>
           <div class="feed-heading calendar-heading">
             <div><p class="eyebrow">접수부터 발표까지</p><h2>청약 캘린더</h2></div>
             <div class="month-controls">
@@ -158,6 +160,7 @@
               <button class="icon-button month-button" id="nextMonth" type="button" aria-label="다음 달">다음</button>
             </div>
           </div>
+          <div class="calendar-legend" aria-label="캘린더 일정 구분"><span><i class="start"></i>접수 시작</span><span><i class="deadline"></i>접수 마감</span><span><i class="winner"></i>당첨 발표</span><span><i class="notice"></i>모집공고</span></div>
           <div class="calendar-layout">
             <div class="calendar-card">
               <div class="week-row" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
@@ -167,7 +170,7 @@
           </div>
         </section>
 
-        <section class="view" id="savedView" data-view-panel="saved" role="tabpanel" hidden>
+        <section class="view" id="savedView" data-view-panel="saved" role="tabpanel" aria-labelledby="savedTab" hidden>
           <div class="feed-heading">
             <div><p class="eyebrow">다시 볼 공고만</p><h2>내 관심 공고</h2></div>
           </div>
@@ -180,7 +183,7 @@
           </div>
         </section>
 
-        <section class="view" id="prepareView" data-view-panel="prepare" role="tabpanel" hidden>
+        <section class="view" id="prepareView" data-view-panel="prepare" role="tabpanel" aria-labelledby="prepareTab" hidden>
           <div class="feed-heading">
             <div><p class="eyebrow">신청 전 실수 줄이기</p><h2>청약 준비 체크리스트</h2></div>
           </div>
@@ -237,21 +240,21 @@
     <form method="dialog" class="dialog-shell" id="watchForm">
       <div class="dialog-handle" aria-hidden="true"></div>
       <header class="dialog-header">
-        <div><p class="eyebrow">놓치지 않게 딱 맞춰</p><h2 id="watchDialogTitle">내 청약 알림</h2></div>
+        <div><p class="eyebrow">내 조건에 맞는 공고만</p><h2 id="watchDialogTitle">내 관심조건</h2></div>
         <button class="icon-button" id="closeWatchButton" aria-label="닫기" type="button">×</button>
       </header>
-      <p class="dialog-lead">관심 조건에 맞는 새 공고와 접수 마감을 알려드려요. 조건은 이 기기에만 저장됩니다.</p>
+      <p class="dialog-lead">관심 지역과 주택 유형을 저장하면 방문할 때 맞는 공고부터 보여드려요. 조건은 이 기기에만 저장됩니다.</p>
       <fieldset><legend>관심 지역</legend><div class="choice-grid region-choice" id="watchRegions"></div></fieldset>
       <fieldset><legend>주택 유형</legend><div class="choice-grid" id="watchTypes"></div></fieldset>
-      <fieldset><legend>받을 알림</legend>
+      <fieldset id="notificationOptions" hidden><legend>받을 알림</legend>
         <div class="toggle-list">
           <label><span><strong>새 공고</strong><small>조건에 맞는 공고가 등록될 때</small></span><input type="checkbox" name="newNotice" checked></label>
           <label><span><strong>마감 D-3</strong><small>준비 서류를 다시 확인할 때</small></span><input type="checkbox" name="deadline3" checked></label>
           <label><span><strong>마감 D-1·당일</strong><small>접수 마감을 놓치지 않도록</small></span><input type="checkbox" name="deadline1" checked></label>
         </div>
       </fieldset>
-      <p class="permission-note" id="permissionNote">웹은 다음 방문 때 새 공고를 알려드리고, Android 앱은 주기적으로 확인해 알림을 보냅니다.</p>
-      <div class="dialog-actions"><button class="primary-button" id="saveWatchButton" value="default" type="submit">알림 저장</button><button class="text-button danger-text" id="disableWatchButton" value="cancel" type="button">알림 끄기</button></div>
+      <p class="permission-note" id="permissionNote">웹은 방문할 때 새 공고를 표시하고, 캘린더 저장으로 마감을 챙길 수 있어요.</p>
+      <div class="dialog-actions"><button class="primary-button" id="saveWatchButton" value="default" type="submit">관심조건 저장</button><button class="text-button danger-text" id="disableWatchButton" value="cancel" type="button">조건 지우기</button></div>
     </form>
   </dialog>
 
@@ -273,7 +276,7 @@
       <p class="dialog-lead">청약한눈은 아래 공식 기관 정보를 정규화합니다. 갱신 실패나 인증키 미연결은 숨기지 않습니다.</p>
       <div class="source-status-list" id="sourceStatusList"></div>
       <p class="source-caution">접수 시간·자격·공고 정정은 기관 원문이 최종 기준입니다.</p>
-      <a class="primary-link" href="./data-status.html">전체 데이터 수집 현황 보기 →</a>
+      <a class="primary-link" href="./data-status.html">전체 데이터 수집 현황 보기</a>
     </article>
   </dialog>
 
