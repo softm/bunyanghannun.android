@@ -36,7 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="청약한눈"
+                android:text="분양한눈"
                 android:textColor="#1E3553"
                 android:textSize="27sp"
                 android:textStyle="bold" />
@@ -46,7 +46,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:text="내 조건에 맞는 청약 일정을 준비하고 있어요"
+                android:text="새 분양 단지와 핵심 조건을 모으고 있어요"
                 android:textColor="#6E6570"
                 android:textSize="15sp" />
 
@@ -54,7 +54,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_marginTop="24dp"
-                android:contentDescription="청약한눈 불러오는 중"
+                android:contentDescription="분양한눈 불러오는 중"
                 android:indeterminate="true"
                 android:indeterminateTint="#8F3658" />
         </LinearLayout>
