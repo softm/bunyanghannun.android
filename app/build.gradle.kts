@@ -12,8 +12,8 @@ android {
         applicationId = "net.softm.bunyanghannun"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
 
         val webUrl = providers.gradleProperty("BUNYANGHANNUN_WEB_URL")
             .orElse("https://softm.github.io/bunyanghannun/")
@@ -70,6 +70,7 @@ dependencies {
     implementation("androidx.work:work-runtime:2.12.0")
     implementation("com.github.softm:hannun-admob-android:1.0.6")
     implementation("com.github.softm:hannun-in-app-update-android:1.0.0")
+    implementation("com.github.softm:hannun-in-app-review-android:1.0.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250517")
