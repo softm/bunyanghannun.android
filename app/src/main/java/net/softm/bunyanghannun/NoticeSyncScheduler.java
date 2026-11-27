@@ -13,8 +13,8 @@ import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
 
 public final class NoticeSyncScheduler {
-    private static final String PERIODIC_WORK = "cheongyak_notice_sync_v1";
-    private static final String IMMEDIATE_WORK = "cheongyak_notice_sync_now_v1";
+    private static final String PERIODIC_WORK = "bunyanghannun_notice_sync_v1";
+    private static final String IMMEDIATE_WORK = "bunyanghannun_notice_sync_now_v1";
 
     private NoticeSyncScheduler() { }
 

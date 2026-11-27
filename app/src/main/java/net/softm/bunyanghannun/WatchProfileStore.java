@@ -7,7 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class WatchProfileStore {
-    static final String PREFS = "cheongyak_watch_v1";
+    static final String PREFS = "bunyanghannun_watch_v1";
     private static final String KEY_PROFILE = "profile";
 
     private WatchProfileStore() { }

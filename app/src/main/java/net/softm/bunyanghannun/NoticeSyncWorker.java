@@ -52,7 +52,7 @@ public final class NoticeSyncWorker extends Worker {
                 JSONObject notice = notices.optJSONObject(index);
                 if (notice == null || notice.optBoolean("stale", false) || !WatchProfileStore.matches(notice, profile)) continue;
                 String id = notice.optString("id", "");
-                String title = notice.optString("title", "청약 공고");
+                String title = notice.optString("title", "분양 공고");
                 if (id.trim().isEmpty()) continue;
                 currentIds.add(id);
 
@@ -62,7 +62,7 @@ public final class NoticeSyncWorker extends Worker {
                     && profile.optBoolean("newNotice", true)
                     && !seen.contains(id)
                     && !notified.contains(newKey)
-                    && NotificationHelper.show(context, newKey, "새 관심 청약 공고", title)) {
+                    && NotificationHelper.show(context, newKey, "새 관심 분양 단지", title)) {
                     notified.add(newKey);
                     sent += 1;
                 }
@@ -77,7 +77,7 @@ public final class NoticeSyncWorker extends Worker {
                 String deadlineKey = DeadlinePolicy.notificationKey(id, days);
                 String dday = days == 0 ? "오늘 마감" : "D-" + days + " 마감";
                 if (!notified.contains(deadlineKey)
-                    && NotificationHelper.show(context, deadlineKey, "청약 접수 " + dday, title)) {
+                    && NotificationHelper.show(context, deadlineKey, "분양 접수 " + dday, title)) {
                     notified.add(deadlineKey);
                     sent += 1;
                 }
@@ -102,7 +102,7 @@ public final class NoticeSyncWorker extends Worker {
         connection.setUseCaches(false);
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("Cache-Control", "no-cache");
-        connection.setRequestProperty("User-Agent", "CheongyakHannunAndroid/1.0");
+        connection.setRequestProperty("User-Agent", "BunyangHannunAndroid/1.0");
         try {
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) throw new IllegalStateException("Notice HTTP " + status);

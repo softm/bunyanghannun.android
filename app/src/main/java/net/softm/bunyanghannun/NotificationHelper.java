@@ -14,7 +14,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 public final class NotificationHelper {
-    private static final String CHANNEL_ID = "cheongyak_schedule";
+    private static final String CHANNEL_ID = "bunyanghannun_schedule";
 
     private NotificationHelper() { }
 
@@ -28,10 +28,10 @@ public final class NotificationHelper {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
-                "청약 공고와 마감",
+                "분양 단지와 접수 마감",
                 NotificationManager.IMPORTANCE_DEFAULT
             );
-            channel.setDescription("관심조건에 맞는 새 청약 공고와 접수 마감 알림");
+            channel.setDescription("관심조건에 맞는 새 분양 단지와 접수 마감 알림");
             manager.createNotificationChannel(channel);
         }
 
@@ -51,7 +51,7 @@ public final class NotificationHelper {
             .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setGroup("cheongyak_updates")
+            .setGroup("bunyanghannun_updates")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT);
         NotificationManagerCompat.from(context).notify(key.hashCode(), notification.build());
         return true;

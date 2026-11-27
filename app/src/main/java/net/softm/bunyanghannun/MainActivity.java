@@ -48,7 +48,7 @@ import softm.hannun.ads.HannunWebViewAds;
 import softm.hannun.update.HannunInAppUpdateManager;
 
 public final class MainActivity extends ComponentActivity {
-    private static final String BRIDGE_NAME = "CheongyakNative";
+    private static final String BRIDGE_NAME = "BunyangNative";
 
     private WebView webView;
     private ProgressBar progress;
@@ -75,7 +75,7 @@ public final class MainActivity extends ComponentActivity {
             try (OutputStream output = getContentResolver().openOutputStream(uri)) {
                 if (output == null) throw new IllegalStateException("No output stream");
                 output.write(text.getBytes(StandardCharsets.UTF_8));
-                Toast.makeText(this, "청약 일정을 저장했어요.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "분양 일정을 저장했어요.", Toast.LENGTH_SHORT).show();
             } catch (Exception error) {
                 Toast.makeText(this, "일정 파일을 저장하지 못했어요.", Toast.LENGTH_LONG).show();
             }
@@ -123,7 +123,7 @@ public final class MainActivity extends ComponentActivity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " CheongyakHannunAndroid/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " BunyangHannunAndroid/1.0");
         if (hasConfiguredAds()) HannunWebViewAds.markNativeAds(settings);
 
         CookieManager.getInstance().setAcceptCookie(true);
@@ -232,7 +232,7 @@ public final class MainActivity extends ComponentActivity {
                 case "requestNotificationPermission" -> runOnUiThread(this::requestNotificationPermission);
                 case "downloadText" -> {
                     String text = request.optString("text", "");
-                    String name = safeFilename(request.optString("name", "cheongyak.ics"));
+                    String name = safeFilename(request.optString("name", "bunyang.ics"));
                     if (!text.trim().isEmpty() && text.length() <= 1_000_000) {
                         runOnUiThread(() -> {
                             pendingDocumentText = text;
@@ -325,7 +325,7 @@ public final class MainActivity extends ComponentActivity {
 
     private static String safeFilename(String value) {
         String cleaned = value.replaceAll("[\\\\/:*?\"<>|\\r\\n]", "_").trim();
-        if (cleaned.isEmpty()) return "cheongyak.ics";
+        if (cleaned.isEmpty()) return "bunyang.ics";
         return cleaned.length() > 100 ? cleaned.substring(0, 100) : cleaned;
     }
 
