@@ -1,12 +1,12 @@
 {
-  "id": "./",
-  "name": "청약한눈 — 내 조건에 맞는 청약 알림",
-  "short_name": "청약한눈",
-  "description": "청약홈·LH·SH 공고와 접수 일정을 관심 지역과 유형에 맞춰 확인합니다.",
+  "id": "/bunyanghannun/",
+  "name": "분양한눈 — 신규 분양 단지 탐색",
+  "short_name": "분양한눈",
+  "description": "공식 신규 분양 단지의 분양가·세대수·면적·입주예정과 일정을 비교합니다.",
   "lang": "ko",
   "dir": "ltr",
-  "start_url": "./?source=pwa",
-  "scope": "./",
+  "start_url": "/bunyanghannun/?source=pwa",
+  "scope": "/bunyanghannun/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "launch_handler": { "client_mode": "navigate-existing" },
@@ -20,8 +20,8 @@
     { "src": "./assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "오늘의 청약", "short_name": "오늘", "description": "현재 접수 중인 청약을 확인합니다.", "url": "./?phase=open&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "청약 캘린더", "short_name": "캘린더", "description": "월간 접수 일정을 확인합니다.", "url": "./?view=calendar&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "내 관심 공고", "short_name": "관심", "description": "저장한 공고를 확인합니다.", "url": "./?view=saved&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+    { "name": "오늘의 분양", "short_name": "오늘", "description": "현재 접수 중인 신규 분양 단지를 확인합니다.", "url": "./?phase=open&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "분양 일정", "short_name": "일정", "description": "월간 신규 분양 일정을 확인합니다.", "url": "./?view=calendar&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "내 관심 단지", "short_name": "관심", "description": "저장한 분양 단지를 비교합니다.", "url": "./?view=saved&source=pwa-shortcut", "icons": [{ "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

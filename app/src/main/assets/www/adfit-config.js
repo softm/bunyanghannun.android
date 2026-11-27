@@ -1,4 +1,4 @@
-// 청약한눈 전용 Kakao AdFit Web 매체(NKm). 다른 서비스에서 광고 단위 ID를 재사용하지 않는다.
+// 분양한눈 전용 Kakao AdFit Web 매체(NKm). 청약한눈(NKw)에서 광고 단위 ID를 재사용하지 않는다.
 export const NATIVE_ADS = /\bAdMobNative\/1\b/.test(globalThis.navigator?.userAgent || "");
 
 export const ADFIT_CONFIG = Object.freeze({
