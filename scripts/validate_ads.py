@@ -55,4 +55,8 @@ assert "if (NATIVE_ADS" in web_adfit, "Android WebView에서 AdFit 요청을 차
 assert "new IntersectionObserver" in web_adfit and "10_000" in web_adfit
 assert "showAdPrivacyOptions" not in activity, "공통 UMP 버튼과 중복되는 웹 브리지를 두면 안 됩니다."
 
-print("청약한눈 AdMob·AdFit 공통 광고 정적 검증 통과")
+assert 'BRIDGE_NAME = "BunyangNative"' in activity
+assert "BunyangHannunAndroid/1.0" in activity
+assert "CheongyakNative" not in activity and "CheongyakHannunAndroid" not in activity
+
+print("분양한눈 AdMob·AdFit·서비스 식별자 정적 검증 통과")
