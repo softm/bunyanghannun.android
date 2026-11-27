@@ -4,7 +4,7 @@ export const REGIONS = [
 ];
 
 export const NOTICE_TYPES = [
-  "민간분양", "공공분양", "공공임대", "민간임대", "오피스텔", "무순위", "임의공급"
+  "민간분양", "공공분양", "오피스텔", "무순위", "임의공급"
 ];
 
 export const DEFAULT_WATCH_PROFILE = Object.freeze({
@@ -167,18 +167,18 @@ export function createNoticeIcs(notice) {
   const endDate = parseDate(end);
   endDate?.setDate(endDate.getDate() + 1);
   const uid = `${notice.id}@bunyanghannun.softm.net`.replace(/[^A-Za-z0-9@._-]/g, "-");
-  const description = `${notice.sourceName || "공식기관"} 공고입니다. 자격과 일정은 기관 원문에서 최종 확인하세요.`;
+  const description = `${notice.sourceName || "공식기관"} 신규 분양 공고입니다. 가격과 일정은 기관 원문에서 최종 확인하세요.`;
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//softm//Cheongyak Hannun//KO",
+    "PRODID:-//softm//Bunyang Hannun//KO",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
     `DTSTART;VALUE=DATE:${icsDate(start)}`,
     `DTEND;VALUE=DATE:${icsDate(toDateKey(endDate || end))}`,
-    `SUMMARY:${escapeIcs(`[청약한눈] ${notice.title}`)}`,
+    `SUMMARY:${escapeIcs(`[분양한눈] ${notice.title}`)}`,
     `DESCRIPTION:${escapeIcs(description)}`,
     `URL:${escapeIcs(notice.officialUrl || "")}`,
     "END:VEVENT",

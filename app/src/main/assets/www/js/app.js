@@ -19,10 +19,10 @@ import {
 import { mountBottomAd } from "./adfit.js";
 
 const STORAGE = {
-  watch: "cheongyak:watch:v1",
-  saved: "cheongyak:saved:v1",
-  seen: "cheongyak:seen:v1",
-  checklist: "cheongyak:checklist:v1"
+  watch: "bunyanghannun:watch:v1",
+  saved: "bunyanghannun:saved:v1",
+  seen: "bunyanghannun:seen:v1",
+  checklist: "bunyanghannun:checklist:v1"
 };
 const urlParams = new URLSearchParams(location.search);
 const allowedPhases = new Set(["active", "open", "upcoming", "announced", "closed", "all"]);
@@ -158,7 +158,7 @@ async function loadData() {
   const envelope = await response.json();
   if (!Array.isArray(envelope.notices)) throw new Error("Invalid notice data envelope");
   state.envelope = envelope;
-  state.notices = envelope.notices.filter((notice) => notice?.id && notice?.title);
+  state.notices = envelope.notices.filter((notice) => notice?.id && notice?.title && NOTICE_TYPES.includes(notice.type));
   state.calendarEvents = buildCalendarEvents(state.notices);
   const nearest = state.calendarEvents.find((event) => event.date >= todayKey()) || state.calendarEvents.at(-1);
   if (nearest) {
@@ -243,11 +243,11 @@ function renderSummary() {
   document.getElementById("todayHeadline").textContent = firstDeadline
     ? `${firstDeadline.region} ${firstDeadline.title}, ${getDday(firstDeadline.applyEnd)} 마감`
     : state.notices.length
-      ? "새 공고와 접수 일정을 확인해 보세요"
-      : "공식 공고 연결 상태를 확인해 주세요";
+      ? "새 분양 단지와 접수 일정을 확인해 보세요"
+      : "공식 분양 공고 연결 상태를 확인해 주세요";
   document.getElementById("todayNote").textContent = state.watch.enabled
     ? `${watchLabel(state.watch)} 조건으로 ${matched.length.toLocaleString("ko-KR")}건을 보고 있어요.`
-    : "관심조건을 설정하면 나에게 맞는 공고만 알려드려요.";
+    : "관심단지 조건을 설정하면 맞는 분양부터 보여드려요.";
 }
 
 function renderFilters() {
@@ -255,10 +255,10 @@ function renderFilters() {
   const regions = ["전체", ...REGIONS.filter((region) => availableRegions.includes(region)), ...availableRegions.filter((region) => !REGIONS.includes(region))];
   els.regionFilters.innerHTML = regions.map((region) => `<button type="button" class="${state.region === region ? "active" : ""}" aria-pressed="${state.region === region}" data-region="${escapeAttribute(region)}">${escapeHtml(region)}</button>`).join("");
   els.regionFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.region = button.dataset.region; state.visibleCount = 24; renderFilters(); renderFeed(); }));
-  const featuredTypes = ["전체", "민간분양", "공공분양", "공공임대", "무순위", "오피스텔", "민간임대"];
+  const featuredTypes = ["전체", "민간분양", "공공분양", "무순위", "오피스텔", "임의공급"];
   els.typeFilters.innerHTML = featuredTypes.map((type) => `<button type="button" class="${state.type === type ? "active" : ""}" aria-pressed="${state.type === type}" data-type="${escapeAttribute(type)}">${escapeHtml(type)}</button>`).join("");
   els.typeFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.type = button.dataset.type; state.visibleCount = 24; renderFilters(); renderFeed(); }));
-  const phases = [["active", "진행·예정"], ["open", "접수중"], ["upcoming", "접수예정"], ["announced", "새 공고"], ["closed", "지난 공고"], ["all", "전체"]];
+  const phases = [["active", "분양중·예정"], ["open", "접수중"], ["upcoming", "분양예정"], ["announced", "신규단지"], ["closed", "마감단지"], ["all", "전체"]];
   els.phaseFilters.innerHTML = phases.map(([value, label]) => `<button type="button" class="${state.phase === value ? "active" : ""}" aria-pressed="${state.phase === value}" data-phase="${value}">${label}</button>`).join("");
   els.phaseFilters.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { state.phase = button.dataset.phase; state.visibleCount = 24; renderFilters(); renderFeed(); }));
 }
@@ -274,8 +274,8 @@ function renderFeed() {
   els.noticeGrid.innerHTML = visible.map(renderNoticeCard).join("");
   els.noticeEmpty.hidden = filtered.length > 0;
   els.loadMoreButton.hidden = visible.length >= filtered.length;
-  els.loadMoreButton.textContent = `공고 더 보기 (${(filtered.length - visible.length).toLocaleString("ko-KR")}개 남음)`;
-  els.resultSummary.textContent = `${filtered.length.toLocaleString("ko-KR")}개 공고${visible.length < filtered.length ? ` · ${visible.length.toLocaleString("ko-KR")}개 표시` : ""}${state.phase !== "all" ? ` · ${phaseLabel(state.phase)}` : ""}`;
+  els.loadMoreButton.textContent = `분양 단지 더 보기 (${(filtered.length - visible.length).toLocaleString("ko-KR")}개 남음)`;
+  els.resultSummary.textContent = `${filtered.length.toLocaleString("ko-KR")}개 분양 단지${visible.length < filtered.length ? ` · ${visible.length.toLocaleString("ko-KR")}개 표시` : ""}${state.phase !== "all" ? ` · ${phaseLabel(state.phase)}` : ""}`;
   syncBrowseUrl();
 }
 
@@ -303,11 +303,11 @@ function renderNoticeCard(notice) {
         <p class="card-location">${escapeHtml([notice.region, notice.district, notice.type].filter(Boolean).join(" · "))}</p>
         <span class="card-schedule">
           <span class="schedule-cell"><small>접수 기간</small><strong>${escapeHtml(formatDateRange(notice.applyStart, notice.applyEnd))}</strong></span>
-          <span class="schedule-cell"><small>당첨 발표</small><strong>${escapeHtml(notice.winnerDate ? formatKoreanDate(notice.winnerDate, { year: false }) : "원문 확인")}</strong></span>
+          <span class="schedule-cell"><small>분양가</small><strong>${escapeHtml(formatPriceRange(notice))}</strong></span>
         </span>
         <span class="tag-row">${tags.map((tag) => `<span>#${escapeHtml(tag)}</span>`).join("")}</span>
       </button>
-      <footer class="card-footer"><span>${notice.totalUnits ? `${Number(notice.totalUnits).toLocaleString("ko-KR")}세대` : notice.provider || "공식 공고"} · ${formatPrice(notice.maxPriceTenThousand)}</span><button class="save-button ${saved ? "saved" : ""}" type="button" data-save-notice="${escapeAttribute(notice.id)}" aria-label="${saved ? "관심 공고에서 삭제" : "관심 공고로 저장"}" aria-pressed="${saved}">${saved ? "♥" : "♡"}</button></footer>
+      <footer class="card-footer"><span>${notice.totalUnits ? `${Number(notice.totalUnits).toLocaleString("ko-KR")}세대` : notice.provider || "공식 분양"} · ${formatAreaRange(notice)}</span><button class="save-button ${saved ? "saved" : ""}" type="button" data-save-notice="${escapeAttribute(notice.id)}" aria-label="${saved ? "관심 단지에서 삭제" : "관심 단지로 저장"}" aria-pressed="${saved}">${saved ? "♥" : "♡"}</button></footer>
     </article>`;
 }
 
@@ -324,10 +324,10 @@ function handleNoticeGridClick(event) {
 function toggleSaved(id) {
   if (state.saved.has(id)) {
     state.saved.delete(id);
-    showToast("관심 공고에서 뺐어요.");
+    showToast("관심 단지에서 뺐어요.");
   } else {
     state.saved.add(id);
-    showToast("관심 공고에 저장했어요.");
+    showToast("관심 단지에 저장했어요.");
   }
   renderFeed();
   renderSaved();
@@ -357,12 +357,13 @@ function openDetail(id) {
     <section class="detail-section"><h3>공급 정보</h3><div class="detail-facts">
       ${renderFact("주택 유형", [notice.type, notice.subtype].filter(Boolean).join(" · ") || "원문 확인")}
       ${renderFact("공급 세대", notice.totalUnits ? `${Number(notice.totalUnits).toLocaleString("ko-KR")}세대` : "원문 확인")}
-      ${renderFact("최고 분양가", formatPrice(notice.maxPriceTenThousand))}
+      ${renderFact("전용면적", formatAreaRange(notice))}
+      ${renderFact("분양가 범위", formatPriceRange(notice))}
       ${renderFact("입주 예정", notice.moveIn || "원문 확인")}
       ${renderFact("시행·공급", notice.provider || "원문 확인")}
       ${renderFact("문의", notice.contact || "기관 원문 확인")}
     </div></section>
-    <p class="detail-caution">청약 자격, 접수 시간, 공급금액과 일정 변경은 기관 원문이 최종 기준입니다.${notice.demo ? " 이 공고는 화면 검증용 예시입니다." : ""}</p>
+    <p class="detail-caution">분양가, 공급면적, 전매 조건과 일정 변경은 기관 원문이 최종 기준입니다.${notice.demo ? " 이 공고는 화면 검증용 예시입니다." : ""}</p>
     <div class="detail-actions"><button type="button" data-calendar-download="${escapeAttribute(notice.id)}">캘린더에 저장</button><a href="${escapeAttribute(safeOfficialUrl(notice.officialUrl))}" target="_blank" rel="noopener">기관 원문 확인</a></div>`;
   els.detailContent.querySelector("[data-calendar-download]")?.addEventListener("click", () => downloadCalendar(notice));
   showDialog(els.detailDialog);
@@ -435,7 +436,7 @@ async function handleWatchSubmit(event) {
   els.watchDialog.close();
   renderWatchSummary();
   renderSummary();
-  showToast(isAndroidApp() ? "내 분양 알림 조건을 저장했어요." : "관심조건을 이 기기에 저장했어요.");
+  showToast(isAndroidApp() ? "내 분양 알림 조건을 저장했어요." : "관심단지 조건을 이 기기에 저장했어요.");
 }
 
 function disableWatch() {
@@ -451,10 +452,10 @@ function disableWatch() {
 function renderWatchSummary() {
   if (!state.watch.enabled) {
     els.watchTitle.textContent = "아직 조건이 없어요";
-    els.watchSummary.textContent = "관심 지역과 주택 유형을 선택해 새 공고와 마감 일정을 받아보세요.";
+    els.watchSummary.textContent = "관심 지역과 분양 유형을 선택해 새 단지와 접수 일정을 받아보세요.";
     return;
   }
-  els.watchTitle.textContent = isAndroidApp() ? "알림이 준비됐어요" : "관심조건을 저장했어요";
+  els.watchTitle.textContent = isAndroidApp() ? "분양 알림이 준비됐어요" : "관심단지 조건을 저장했어요";
   els.watchSummary.textContent = `${watchLabel(state.watch)} · 맞는 공고부터 보여드려요.`;
 }
 
@@ -463,7 +464,7 @@ function configureWatchMode() {
   const dialogTitle = document.getElementById("watchDialogTitle");
   const saveButton = document.getElementById("saveWatchButton");
   if (!isAndroidApp()) return;
-  if (label) label.textContent = "알림 설정";
+  if (label) label.textContent = "분양 알림";
   if (dialogTitle) dialogTitle.textContent = "내 분양 알림";
   if (saveButton) saveButton.textContent = "알림 저장";
   document.getElementById("notificationOptions").hidden = false;
@@ -508,7 +509,7 @@ function renderCalendar() {
 }
 
 function renderCalendarEvents(events) {
-  els.calendarEvents.innerHTML = `<div class="calendar-events-header"><strong>${escapeHtml(formatKoreanDate(state.selectedDate, { weekday: true }))}</strong><span>${events.length}개 일정</span></div>${events.length ? `<div class="calendar-event-list">${events.map((event) => `<button class="calendar-event" type="button" data-notice-id="${escapeAttribute(event.notice.id)}"><span class="calendar-event-date">${escapeHtml(event.label.replace("청약 ", ""))}</span><span><strong>${escapeHtml(event.notice.title)}</strong><small>${escapeHtml(event.notice.region)} · ${escapeHtml(event.notice.sourceName || "공식기관")}</small></span></button>`).join("")}</div>` : '<div class="calendar-empty">이날 등록된 청약 일정이 없어요.</div>'}`;
+  els.calendarEvents.innerHTML = `<div class="calendar-events-header"><strong>${escapeHtml(formatKoreanDate(state.selectedDate, { weekday: true }))}</strong><span>${events.length}개 일정</span></div>${events.length ? `<div class="calendar-event-list">${events.map((event) => `<button class="calendar-event" type="button" data-notice-id="${escapeAttribute(event.notice.id)}"><span class="calendar-event-date">${escapeHtml(event.label.replace("청약 ", ""))}</span><span><strong>${escapeHtml(event.notice.title)}</strong><small>${escapeHtml(event.notice.region)} · ${escapeHtml(event.notice.sourceName || "공식기관")}</small></span></button>`).join("")}</div>` : '<div class="calendar-empty">이날 등록된 분양 일정이 없어요.</div>'}`;
 }
 
 function shiftMonth(delta) {
@@ -608,7 +609,7 @@ async function notifyNewMatches() {
   matched.forEach((notice) => state.seen.add(notice.id));
   persistJson(STORAGE.seen, [...state.seen].slice(-1200));
   if (!fresh.length || isAndroidApp()) return;
-  showToast(`관심조건에 맞는 새 공고 ${fresh.length.toLocaleString("ko-KR")}건을 확인했어요.`);
+  showToast(`관심조건에 맞는 새 분양 단지 ${fresh.length.toLocaleString("ko-KR")}건을 확인했어요.`);
 }
 
 function configureInstallEntry() {
@@ -622,7 +623,7 @@ function configureInstallEntry() {
   window.addEventListener("appinstalled", () => {
     state.deferredInstallPrompt = null;
     els.installButton.hidden = true;
-    showToast("청약한눈을 홈 화면에 설치했어요.");
+    showToast("분양한눈을 홈 화면에 설치했어요.");
   });
 }
 
@@ -642,7 +643,7 @@ async function handleInstallClick() {
   } else if (/Android/i.test(ua)) {
     els.installGuide.innerHTML = "<p>브라우저 메뉴에서 홈 화면에 추가할 수 있어요.</p><ol><li>오른쪽 위 메뉴를 엽니다.</li><li><strong>홈 화면에 추가</strong> 또는 <strong>앱 설치</strong>를 선택합니다.</li></ol>";
   } else {
-    els.installGuide.innerHTML = "<p>주소창의 설치 아이콘이나 브라우저 메뉴를 이용하세요.</p><ol><li>브라우저 메뉴를 엽니다.</li><li><strong>청약한눈 설치</strong> 또는 <strong>앱 설치</strong>를 선택합니다.</li></ol>";
+    els.installGuide.innerHTML = "<p>주소창의 설치 아이콘이나 브라우저 메뉴를 이용하세요.</p><ol><li>브라우저 메뉴를 엽니다.</li><li><strong>분양한눈 설치</strong> 또는 <strong>앱 설치</strong>를 선택합니다.</li></ol>";
   }
   showDialog(els.installDialog);
 }
@@ -655,8 +656,8 @@ async function registerServiceWorker() {
 
 function postNative(payload) {
   try {
-    if (window.CheongyakNative?.postMessage) {
-      window.CheongyakNative.postMessage(JSON.stringify(payload));
+    if (window.BunyangNative?.postMessage) {
+      window.BunyangNative.postMessage(JSON.stringify(payload));
       return true;
     }
   } catch (error) { console.warn("Native bridge failed", error); }
@@ -664,7 +665,7 @@ function postNative(payload) {
 }
 
 function isAndroidApp() {
-  return /CheongyakHannunAndroid\/|AdMobNative\/1/i.test(navigator.userAgent);
+  return /BunyangHannunAndroid\/|AdMobNative\/1/i.test(navigator.userAgent);
 }
 
 function showDialog(dialog) {
@@ -691,6 +692,23 @@ function formatDateRange(start, end) {
   return `${formatKoreanDate(start, { year: false })} ~ ${formatKoreanDate(end, { year: false })}`;
 }
 
+function formatAreaRange(notice) {
+  const min = Number(notice.minAreaSquareMeter);
+  const max = Number(notice.maxAreaSquareMeter);
+  if (!Number.isFinite(max) || max <= 0) return "면적 원문 확인";
+  const roundedMax = Math.round(max * 10) / 10;
+  if (!Number.isFinite(min) || min <= 0 || Math.abs(min - max) < 0.05) return `${roundedMax.toLocaleString("ko-KR")}㎡`;
+  return `${(Math.round(min * 10) / 10).toLocaleString("ko-KR")}~${roundedMax.toLocaleString("ko-KR")}㎡`;
+}
+
+function formatPriceRange(notice) {
+  const min = Number(notice.minPriceTenThousand);
+  const max = Number(notice.maxPriceTenThousand);
+  if (!Number.isFinite(max) || max <= 0) return formatPrice(max);
+  if (!Number.isFinite(min) || min <= 0 || min === max) return formatPrice(max);
+  return `${formatPrice(min)}~${formatPrice(max)}`;
+}
+
 function formatTimestamp(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "갱신시각 미정";
@@ -698,7 +716,7 @@ function formatTimestamp(value) {
 }
 
 function phaseLabel(id) {
-  return ({ active: "진행·예정", open: "접수중", upcoming: "접수예정", announced: "새 공고", closed: "지난 공고" })[id] || "전체";
+  return ({ active: "분양중·예정", open: "접수중", upcoming: "분양예정", announced: "신규단지", closed: "마감단지" })[id] || "전체";
 }
 
 function safeOfficialUrl(value) {
@@ -709,7 +727,7 @@ function safeOfficialUrl(value) {
 }
 
 function safeFilename(value) {
-  return String(value || "청약일정").replace(/[\\/:*?\"<>|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "청약일정";
+  return String(value || "분양일정").replace(/[\\/:*?\"<>|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "분양일정";
 }
 
 function escapeHtml(value) {
