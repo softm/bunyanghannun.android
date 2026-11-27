@@ -67,5 +67,5 @@ jobs:
           gh release create "$TAG" "$APK" "$AAB" "bunyanghannun-$CODE-SHA256SUMS.txt" \
             --draft \
             --target "$GITHUB_SHA" \
-            --title "청약한눈 $VERSION ($CODE) Play 배포 준비" \
+            --title "분양한눈 $VERSION ($CODE) Play 배포 준비" \
             --notes "공통 softm.keystore.jks로 서명하고 실제 Release 검증에 사용할 비공개 Draft 산출물입니다."
