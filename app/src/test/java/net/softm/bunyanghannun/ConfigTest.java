@@ -18,14 +18,19 @@ public class ConfigTest {
         JSONObject profile = new JSONObject()
             .put("enabled", true)
             .put("regions", new JSONArray().put("서울"))
-            .put("types", new JSONArray().put("공공임대"));
-        JSONObject matching = new JSONObject().put("region", "서울").put("type", "공공임대");
-        JSONObject wrongRegion = new JSONObject().put("region", "경기").put("type", "공공임대");
+            .put("types", new JSONArray().put("공공분양"));
+        JSONObject matching = new JSONObject().put("region", "서울").put("type", "공공분양");
+        JSONObject wrongRegion = new JSONObject().put("region", "경기").put("type", "공공분양");
         JSONObject wrongType = new JSONObject().put("region", "서울").put("type", "민간분양");
 
         assertTrue(WatchProfileStore.matches(matching, profile));
         assertFalse(WatchProfileStore.matches(wrongRegion, profile));
         assertFalse(WatchProfileStore.matches(wrongType, profile));
+    }
+
+    @Test public void serviceIdentifiersAreBunyangSpecific() {
+        assertEquals("bunyanghannun_watch_v1", WatchProfileStore.PREFS);
+        assertEquals("net.softm.bunyanghannun", BuildConfig.APPLICATION_ID);
     }
 
     @Test public void deadlineUsesKoreanCalendarDates() {
